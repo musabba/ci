@@ -9,7 +9,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
       - name: Run shellcheck
@@ -25,7 +25,7 @@ jobs:
           shellcheck example.sh || true
 
   benchmark:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
       - name: CPU benchmark
@@ -41,7 +41,7 @@ jobs:
           sysbench fileio --file-test-mode=seqwr cleanup > /dev/null 2>&1
 
   network:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Network connectivity check
         run: |
@@ -54,7 +54,7 @@ jobs:
             https://speed.hetzner.de/10MB.bin
 
   summary:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [lint, benchmark, network]
     steps:
       - name: All checks passed
