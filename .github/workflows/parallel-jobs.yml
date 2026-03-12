@@ -1,0 +1,61 @@
+name: Parallel Jobs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run shellcheck
+        run: |
+          cat <<'EOF' > example.sh
+          #!/bin/bash
+          set -euo pipefail
+          echo "Hello, $USER"
+          for f in *.txt; do
+              echo "Processing $f"
+          done
+          EOF
+          shellcheck example.sh || true
+
+  benchmark:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+      - name: CPU benchmark
+        run: |
+          echo "Benchmarking with sysbench..."
+          sudo apt-get install -y -qq sysbench > /dev/null 2>&1
+          sysbench cpu --cpu-max-prime=20000 --threads=2 run
+
+      - name: Disk I/O benchmark
+        run: |
+          sysbench fileio --file-test-mode=seqwr prepare > /dev/null 2>&1
+          sysbench fileio --file-test-mode=seqwr run
+          sysbench fileio --file-test-mode=seqwr cleanup > /dev/null 2>&1
+
+  network:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - name: Network connectivity check
+        run: |
+          echo "--- DNS resolution ---"
+          dig +short github.com
+          echo "--- Curl test ---"
+          curl -s -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n" https://github.com
+          echo "--- Download speed ---"
+          curl -s -o /dev/null -w "Downloaded 10MB in %{time_total}s (%{speed_download} bytes/sec)\n" \
+            https://speed.hetzner.de/10MB.bin
+
+  summary:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    needs: [lint, benchmark, network]
+    steps:
+      - name: All checks passed
+        run: echo "All parallel jobs completed successfully!"

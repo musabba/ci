@@ -1,0 +1,72 @@
+name: Python Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: useblacksmith/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Print version
+        run: python --version
+
+      - name: Create test files
+        run: |
+          cat <<'EOF' > calculator.py
+          def add(a, b):
+              return a + b
+
+          def divide(a, b):
+              if b == 0:
+                  raise ValueError("Cannot divide by zero")
+              return a / b
+
+          def is_prime(n):
+              if n < 2:
+                  return False
+              for i in range(2, int(n**0.5) + 1):
+                  if n % i == 0:
+                      return False
+              return True
+          EOF
+
+          cat <<'EOF' > test_calculator.py
+          import unittest
+          from calculator import add, divide, is_prime
+
+          class TestCalculator(unittest.TestCase):
+              def test_add(self):
+                  self.assertEqual(add(2, 3), 5)
+                  self.assertEqual(add(-1, 1), 0)
+
+              def test_divide(self):
+                  self.assertEqual(divide(10, 2), 5)
+                  with self.assertRaises(ValueError):
+                      divide(10, 0)
+
+              def test_is_prime(self):
+                  self.assertTrue(is_prime(7))
+                  self.assertTrue(is_prime(13))
+                  self.assertFalse(is_prime(4))
+                  self.assertFalse(is_prime(1))
+
+          if __name__ == "__main__":
+              unittest.main()
+          EOF
+
+      - name: Run tests
+        run: python -m unittest test_calculator -v

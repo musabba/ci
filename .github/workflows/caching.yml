@@ -1,0 +1,55 @@
+name: Caching
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  cached-build:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: useblacksmith/setup-go@v6
+        with:
+          go-version: "1.22"
+
+      - name: Create Go project
+        run: |
+          mkdir -p myapp && cd myapp
+          go mod init myapp
+          cat <<'EOF' > main.go
+          package main
+
+          import (
+              "fmt"
+              "net/http"
+              "runtime"
+          )
+
+          func main() {
+              fmt.Printf("Go %s on %s/%s\n", runtime.Version(), runtime.GOOS, runtime.GOARCH)
+              http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+                  fmt.Fprintf(w, "Hello from Blacksmith!")
+              })
+          }
+          EOF
+          cat <<'EOF' > main_test.go
+          package main
+
+          import "testing"
+
+          func TestMain(t *testing.T) {
+              t.Log("Build test passed")
+          }
+          EOF
+
+      - name: Build and test
+        working-directory: myapp
+        run: |
+          go build -v ./...
+          go test -v ./...

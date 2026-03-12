@@ -1,0 +1,38 @@
+name: Basic Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System info
+        run: |
+          echo "--- CPU ---"
+          nproc
+          lscpu | head -20
+          echo "--- Memory ---"
+          free -h
+          echo "--- Disk ---"
+          df -h /
+          echo "--- OS ---"
+          cat /etc/os-release
+
+      - name: Build a simple C program
+        run: |
+          cat <<'EOF' > hello.c
+          #include <stdio.h>
+          int main() {
+              printf("Hello from Blacksmith!\n");
+              return 0;
+          }
+          EOF
+          gcc -o hello hello.c
+          ./hello

@@ -1,0 +1,31 @@
+name: Docker Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  docker:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Dockerfile
+        run: |
+          cat <<'EOF' > Dockerfile
+          FROM alpine:3.19
+          RUN apk add --no-cache curl jq
+          CMD ["echo", "Container built and ran on Blacksmith!"]
+          EOF
+
+      - name: Build Docker image
+        run: docker build -t blacksmith-test:latest .
+
+      - name: Run Docker container
+        run: docker run --rm blacksmith-test:latest
+
+      - name: Docker info
+        run: docker info
